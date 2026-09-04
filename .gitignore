@@ -1,0 +1,13 @@
+node_modules/
+.next/
+out/
+build/
+.env
+.env.local
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+temp_*.pdf
+debug_output.txt
