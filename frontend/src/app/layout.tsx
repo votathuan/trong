@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "AI Quiz AutoGrader",
+  title: "Đoàn Viết Sơn - AI Quiz",
   description: "Upload PDF and get auto-graded quizzes",
 };
 

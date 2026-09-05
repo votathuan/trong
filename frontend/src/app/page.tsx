@@ -14,6 +14,8 @@ export default function Home() {
   const [userAnswers, setUserAnswers] = useState<Record<number, number>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [score, setScore] = useState(0);
+  const [correctQuestionIds, setCorrectQuestionIds] = useState<number[]>([]);
+  const [wrongQuestionIds, setWrongQuestionIds] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,27 +55,47 @@ export default function Home() {
   };
 
   const handleSelectAnswer = (questionId: number, optIndex: number) => {
-    if (userAnswers[questionId] !== undefined) return; // already answered
+    if (correctQuestionIds.includes(questionId)) return; // already correct
     setUserAnswers((prev) => ({ ...prev, [questionId]: optIndex }));
+    if (wrongQuestionIds.includes(questionId)) {
+      setWrongQuestionIds(prev => prev.filter(id => id !== questionId));
+    }
   };
 
   const handleSubmit = () => {
     if (!quizData) return;
-    let correctCount = 0;
+    
+    let newCorrect = [...correctQuestionIds];
+    let newWrong: number[] = [];
+    let allCorrect = true;
+
     quizData.forEach((q) => {
+      if (correctQuestionIds.includes(q.id)) return;
+
       if (userAnswers[q.id] === q.answer_index) {
-        correctCount++;
+        newCorrect.push(q.id);
+      } else {
+        newWrong.push(q.id);
+        allCorrect = false;
       }
     });
-    setScore(correctCount);
-    setIsSubmitted(true);
+
+    setCorrectQuestionIds(newCorrect);
+    setWrongQuestionIds(newWrong);
+
+    if (allCorrect) {
+      setScore(newCorrect.length);
+      setIsSubmitted(true);
+    } else {
+      alert(`Bạn làm sai ${newWrong.length} câu. Vui lòng chọn lại đáp án cho các câu sai và nộp lại!`);
+    }
   };
 
   return (
     <div className="min-h-screen bg-slate-50 p-6 md:p-12 font-sans text-slate-800">
       <div className="max-w-3xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100">
         <div className="bg-gradient-to-br from-indigo-600 to-violet-700 p-8 text-white">
-          <h1 className="text-3xl font-extrabold tracking-tight">AI Quiz AutoGrader</h1>
+          <h1 className="text-3xl font-extrabold tracking-tight">Đoàn Viết Sơn - AI Quiz</h1>
           <p className="opacity-90 mt-2 text-indigo-100 text-lg">Upload đề thi PDF. Làm bài. Nhận điểm ngay.</p>
         </div>
 
@@ -127,39 +149,39 @@ export default function Home() {
                   
                   <div className="space-y-3">
                     {q.options.map((opt, idx) => {
-                      const hasAnswered = userAnswers[q.id] !== undefined;
                       const isSelected = userAnswers[q.id] === idx;
-                      const isCorrect = q.answer_index === idx;
+                      const isCorrectlySubmitted = correctQuestionIds.includes(q.id);
+                      const isWronglySubmitted = wrongQuestionIds.includes(q.id) && isSelected;
                       
                       let btnClass = "w-full text-left px-5 py-4 rounded-xl border-2 transition-all duration-200 font-medium text-lg ";
                       
-                      if (!hasAnswered) {
-                        btnClass += isSelected 
-                          ? "border-indigo-600 bg-indigo-50 text-indigo-800 shadow-sm" 
-                          : "border-slate-100 bg-slate-50 hover:border-indigo-300 hover:bg-white text-slate-700";
-                      } else {
-                        if (isCorrect) {
+                      if (isCorrectlySubmitted) {
+                        if (q.answer_index === idx) {
                           btnClass += "border-emerald-500 bg-emerald-50 text-emerald-800";
-                        } else if (isSelected && !isCorrect) {
-                          btnClass += "border-rose-500 bg-rose-50 text-rose-800";
                         } else {
                           btnClass += "border-slate-100 bg-slate-50 text-slate-400 opacity-60";
                         }
+                      } else if (isWronglySubmitted) {
+                        btnClass += "border-rose-500 bg-rose-50 text-rose-800";
+                      } else if (isSelected) {
+                        btnClass += "border-indigo-600 bg-indigo-50 text-indigo-800 shadow-sm";
+                      } else {
+                        btnClass += "border-slate-100 bg-slate-50 hover:border-indigo-300 hover:bg-white text-slate-700";
                       }
 
                       return (
                         <button
                           key={idx}
                           onClick={() => handleSelectAnswer(q.id, idx)}
-                          disabled={hasAnswered}
+                          disabled={isCorrectlySubmitted}
                           className={btnClass}
                         >
                           <div className="flex justify-between items-center">
                             <span>{opt}</span>
-                            {hasAnswered && isCorrect && (
+                            {isCorrectlySubmitted && q.answer_index === idx && (
                               <svg className="w-7 h-7 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
                             )}
-                            {hasAnswered && isSelected && !isCorrect && (
+                            {isWronglySubmitted && (
                               <svg className="w-7 h-7 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12"></path></svg>
                             )}
                           </div>
