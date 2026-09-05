@@ -53,17 +53,33 @@ export default function Home() {
   };
 
   const handleSelectAnswer = (questionId: number, optIndex: number) => {
-    // Nếu đã chọn đúng rồi thì khóa, không cho đổi nữa
-    const q = quizData?.find(x => x.id === questionId);
-    if (q && userAnswers[questionId] === q.answer_index) return;
+    // Lock immediately after choosing
+    if (userAnswers[questionId] !== undefined) return;
     
     setUserAnswers((prev) => ({ ...prev, [questionId]: optIndex }));
   };
 
   const handleSubmit = () => {
     if (!quizData) return;
-    setScore(quizData.length);
-    setIsSubmitted(true);
+    
+    const newAnswers = { ...userAnswers };
+    let wrongCount = 0;
+
+    quizData.forEach((q) => {
+      // If wrong, clear the answer so they have to redo it
+      if (newAnswers[q.id] !== undefined && newAnswers[q.id] !== q.answer_index) {
+        delete newAnswers[q.id];
+        wrongCount++;
+      }
+    });
+
+    if (wrongCount === 0) {
+      setScore(quizData.length);
+      setIsSubmitted(true);
+    } else {
+      setUserAnswers(newAnswers);
+      alert(`Bạn làm sai ${wrongCount} câu. Các câu sai đã được mở khóa lại, vui lòng chọn lại đáp án và nộp lại bài!`);
+    }
   };
 
   return (
@@ -126,7 +142,8 @@ export default function Home() {
                     {q.options.map((opt, idx) => {
                       const isSelected = userAnswers[q.id] === idx;
                       const isCorrect = q.answer_index === idx;
-                      const hasAnsweredCorrectly = userAnswers[q.id] === q.answer_index;
+                      const hasAnswered = userAnswers[q.id] !== undefined;
+                      const isAnsweredCorrectly = hasAnswered && userAnswers[q.id] === q.answer_index;
                       
                       let btnClass = "w-full text-left px-5 py-4 rounded-xl border-2 transition-all duration-200 font-medium text-lg ";
                       
@@ -137,7 +154,7 @@ export default function Home() {
                           btnClass += "border-rose-500 bg-rose-50 text-rose-800";
                         }
                       } else {
-                        if (hasAnsweredCorrectly) {
+                        if (isAnsweredCorrectly) {
                           btnClass += "border-slate-100 bg-slate-50 text-slate-400 opacity-60";
                         } else {
                           btnClass += "border-slate-100 bg-slate-50 hover:border-indigo-300 hover:bg-white text-slate-700";
@@ -148,7 +165,7 @@ export default function Home() {
                         <button
                           key={idx}
                           onClick={() => handleSelectAnswer(q.id, idx)}
-                          disabled={hasAnsweredCorrectly}
+                          disabled={hasAnswered}
                           className={btnClass}
                         >
                           <div className="flex justify-between items-center">
@@ -170,10 +187,10 @@ export default function Home() {
               {!isSubmitted ? (
                 <button
                   onClick={handleSubmit}
-                  disabled={quizData.some(q => userAnswers[q.id] !== q.answer_index)}
+                  disabled={Object.keys(userAnswers).length !== quizData.length}
                   className="w-full py-5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-2xl font-bold text-xl shadow-lg shadow-indigo-200 transition-all active:scale-95"
                 >
-                  Nộp Bài (Phải chọn đúng 100%)
+                  Nộp Bài Chấm Điểm
                 </button>
               ) : (
                 <button
