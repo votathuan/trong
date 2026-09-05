@@ -14,6 +14,8 @@ export default function Home() {
   const [userAnswers, setUserAnswers] = useState<Record<number, number>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [score, setScore] = useState(0);
+  const [isRetrying, setIsRetrying] = useState(false);
+  const [wrongQuestionIds, setWrongQuestionIds] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,11 +66,16 @@ export default function Home() {
     
     const newAnswers = { ...userAnswers };
     let wrongCount = 0;
+    const newWrongIds: number[] = [];
 
-    quizData.forEach((q) => {
-      // If wrong, clear the answer so they have to redo it
+    const questionsToGrade = isRetrying 
+      ? quizData.filter(q => wrongQuestionIds.includes(q.id))
+      : quizData;
+
+    questionsToGrade.forEach((q) => {
       if (newAnswers[q.id] !== undefined && newAnswers[q.id] !== q.answer_index) {
         delete newAnswers[q.id];
+        newWrongIds.push(q.id);
         wrongCount++;
       }
     });
@@ -76,9 +83,12 @@ export default function Home() {
     if (wrongCount === 0) {
       setScore(quizData.length);
       setIsSubmitted(true);
+      setIsRetrying(false);
     } else {
       setUserAnswers(newAnswers);
-      alert(`Bạn làm sai ${wrongCount} câu. Các câu sai đã được mở khóa lại, vui lòng chọn lại đáp án và nộp lại bài!`);
+      setWrongQuestionIds(newWrongIds);
+      setIsRetrying(true);
+      window.scrollTo(0, 0);
     }
   };
 
@@ -131,7 +141,14 @@ export default function Home() {
                 </div>
               )}
 
-              {quizData.map((q, qIndex) => (
+              {isRetrying && !isSubmitted && (
+                <div className="bg-rose-50 border-2 border-rose-200 rounded-2xl p-6 text-center shadow-sm">
+                  <h2 className="text-xl font-bold text-rose-700">Màn hình làm lại</h2>
+                  <p className="text-rose-600 mt-1">Bạn cần làm lại {wrongQuestionIds.length} câu dưới đây cho đến khi đúng.</p>
+                </div>
+              )}
+
+              {(isRetrying ? quizData.filter(q => wrongQuestionIds.includes(q.id)) : quizData).map((q, qIndex) => (
                 <div key={q.id} className="bg-white border border-slate-200 rounded-2xl p-7 shadow-sm">
                   <h3 className="text-xl font-bold text-slate-800 mb-5 flex gap-2">
                     <span className="text-indigo-600">Câu {qIndex + 1}:</span> 
@@ -187,7 +204,7 @@ export default function Home() {
               {!isSubmitted ? (
                 <button
                   onClick={handleSubmit}
-                  disabled={Object.keys(userAnswers).length !== quizData.length}
+                  disabled={(isRetrying ? quizData.filter(q => wrongQuestionIds.includes(q.id)) : quizData).some(q => userAnswers[q.id] === undefined)}
                   className="w-full py-5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-2xl font-bold text-xl shadow-lg shadow-indigo-200 transition-all active:scale-95"
                 >
                   Nộp Bài Chấm Điểm
