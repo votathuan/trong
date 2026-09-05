@@ -64,6 +64,11 @@ def parse_pdf_quiz(file_path: str):
                     if not text: continue
                     
                     bbox = fitz.Rect(span["bbox"])
+                    
+                    # Ignore headers and footers (typical browser print margins)
+                    if bbox.y0 < 50 or bbox.y1 > page.rect.height - 50:
+                        continue
+                        
                     is_highlighted = any(is_rect_overlap(bbox, hr) for hr in highlight_rects)
                     
                     # Also check if text color is red
@@ -85,8 +90,8 @@ def parse_pdf_quiz(file_path: str):
                             "options": [],
                             "answer_index": -1
                         }
-                    # Detect options (e.g., "A.", "B.", "C.", "D.")
-                    elif re.match(r'^[A-D][:\.]\s+', text):
+                    # Detect options (e.g., "A.", "B.", "C.", "D." with or without space/quotes)
+                    elif re.match(r'^[A-D][:\.](?:\s|["“\']|$)', text):
                         if current_question:
                             opt_index = len(current_question["options"])
                             current_question["options"].append(text)
