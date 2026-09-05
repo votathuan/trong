@@ -151,8 +151,8 @@ export default function Home() {
               {(isRetrying ? quizData.filter(q => wrongQuestionIds.includes(q.id)) : quizData).map((q, qIndex) => (
                 <div key={q.id} className="bg-white border border-slate-200 rounded-2xl p-7 shadow-sm">
                   <h3 className="text-xl font-bold text-slate-800 mb-5 flex gap-2">
-                    <span className="text-indigo-600">Câu {qIndex + 1}:</span> 
-                    {q.question.replace(/^Câu \d+:\s*/i, '')}
+                    <span className="text-indigo-600 shrink-0">Câu {qIndex + 1}:</span> 
+                    <span>{q.question.replace(/^(Câu|Question)\s*\d+[:\.]\s*|^\d+[\.\:]\s*/i, '')}</span>
                   </h3>
                   
                   <div className="space-y-3">
@@ -160,22 +160,19 @@ export default function Home() {
                       const isSelected = userAnswers[q.id] === idx;
                       const isCorrect = q.answer_index === idx;
                       const hasAnswered = userAnswers[q.id] !== undefined;
-                      const isAnsweredCorrectly = hasAnswered && userAnswers[q.id] === q.answer_index;
                       
                       let btnClass = "w-full text-left px-5 py-4 rounded-xl border-2 transition-all duration-200 font-medium text-lg ";
                       
-                      if (isSelected) {
+                      if (hasAnswered) {
                         if (isCorrect) {
                           btnClass += "border-emerald-500 bg-emerald-50 text-emerald-800";
-                        } else {
+                        } else if (isSelected) {
                           btnClass += "border-rose-500 bg-rose-50 text-rose-800";
+                        } else {
+                          btnClass += "border-slate-100 bg-slate-50 text-slate-400 opacity-60";
                         }
                       } else {
-                        if (isAnsweredCorrectly) {
-                          btnClass += "border-slate-100 bg-slate-50 text-slate-400 opacity-60";
-                        } else {
-                          btnClass += "border-slate-100 bg-slate-50 hover:border-indigo-300 hover:bg-white text-slate-700";
-                        }
+                        btnClass += "border-slate-100 bg-slate-50 hover:border-indigo-300 hover:bg-white text-slate-700";
                       }
 
                       return (
@@ -187,11 +184,11 @@ export default function Home() {
                         >
                           <div className="flex justify-between items-center">
                             <span>{opt}</span>
-                            {isSelected && isCorrect && (
-                              <svg className="w-7 h-7 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+                            {hasAnswered && isCorrect && (
+                              <svg className="w-7 h-7 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
                             )}
-                            {isSelected && !isCorrect && (
-                              <svg className="w-7 h-7 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            {hasAnswered && isSelected && !isCorrect && (
+                              <svg className="w-7 h-7 text-rose-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12"></path></svg>
                             )}
                           </div>
                         </button>
